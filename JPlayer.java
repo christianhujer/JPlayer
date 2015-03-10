@@ -29,7 +29,7 @@ public class JPlayer {
     }
 
     private TrayIcon createAndInstallTrayIcon() throws AWTException {
-        final TrayIcon trayIcon = new TrayIcon(getDefaultToolkit().createImage(getClass().getResource("animatedGlider.svg")));
+        final TrayIcon trayIcon = new TrayIcon(getDefaultToolkit().createImage(getClass().getResource("MPlayer_w" + getSystemTray().getTrayIconSize().width + ".png")));
         getSystemTray().add(trayIcon);
         trayIcon.setPopupMenu(createPopupMenu());
         return trayIcon;
@@ -57,13 +57,13 @@ public class JPlayer {
         }
     }
 
-    public void tryKeepPlaying(final String uri) {
+    public void tryKeepPlaying(final String uri) throws IOException {
         final ProcessBuilder processBuilder = new ProcessBuilder("mplayer", "--quiet", uri);
         while (!mainThread.isInterrupted())
             runMplayer(processBuilder);
     }
 
-    public void runMplayer(final ProcessBuilder processBuilder) {
+    public void runMplayer(final ProcessBuilder processBuilder) throws IOException {
         mplayer = processBuilder.start();
         try (final BufferedReader in = new BufferedReader(new InputStreamReader(mplayer.getInputStream()))) {
             in.lines().filter(line -> line.matches("^ICY Info.*")).forEach(this::setIcy);
