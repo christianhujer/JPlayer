@@ -25,7 +25,7 @@ public class JPlayer {
     public JPlayer(final String... args) throws AWTException {
         mainThread = Thread.currentThread();
         trayIcon = createAndInstallTrayIcon();
-        play(args[0]);
+        play(args.length > 0 ? args[0] : "http://streamer.psyradio.org:8010/");
     }
 
     private TrayIcon createAndInstallTrayIcon() throws AWTException {
