@@ -1,7 +1,7 @@
 .PHONY: all
 all: JPlayer.jar
 
-JPlayer.jar: JPlayer.class $(patsubst %,MPlayer_w%.png,16 24 32)
+JPlayer.jar: JPlayer.class Restarter.class $(patsubst %,MPlayer_w%.png,16 24 32)
 	jar cef JPlayer $@ $^
 
 %.class: %.java

@@ -5,7 +5,6 @@ import java.awt.TrayIcon;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -20,15 +19,18 @@ public class JPlayer {
         new JPlayer(args);
     }
 
-    private final Thread mainThread;
+    private static final String DEFAULT_URI = "http://streamer.psyradio.org:8010/";
+
+    private Thread thread;
     private final TrayIcon trayIcon;
     private String title;
     private volatile Process mplayer;
+    private String uri = DEFAULT_URI;
 
     public JPlayer(final String... args) throws AWTException {
-        mainThread = Thread.currentThread();
         trayIcon = createAndInstallTrayIcon();
-        play(args.length > 0 ? args[0] : "http://streamer.psyradio.org:8010/");
+        if (args.length > 0) uri = args[0];
+        start();
     }
 
     private TrayIcon createAndInstallTrayIcon() throws AWTException {
@@ -40,7 +42,8 @@ public class JPlayer {
 
     private PopupMenu createPopupMenu() {
         final PopupMenu popupMenu = new PopupMenu("JPlayer");
-        //popupMenu.add(createMenuItem("pause", this::pause));
+        popupMenu.add(createMenuItem("pause", this::pause));
+        popupMenu.add(createMenuItem("continue", this::cont));
 	popupMenu.add(createMenuItem("restart", this::restart));
         popupMenu.add(createMenuItem("quit", this::stop));
         return popupMenu;
@@ -52,9 +55,19 @@ public class JPlayer {
         return menuItem;
     }
 
+    public void start() {
+        if (thread != null) return;
+        thread = new Thread(this::play);
+        thread.start();
+    }
+
     public void pause(final ActionEvent e) {
+        thread.interrupt();
         mplayer.destroy();
-        mainThread.interrupt();
+    }
+
+    public void cont(final ActionEvent e) {
+        start();
     }
 
     public void stop(final ActionEvent e) {
@@ -65,37 +78,24 @@ public class JPlayer {
     public void restart(final ActionEvent e) {
         stop(e);
         try {
-            restart();
+            Restarter.restart();
         } catch (final IOException ex) {
             throw new UncheckedIOException(ex);
         }
     }
 
-    public static void restart() throws IOException {
-        new ProcessBuilder(getMyOwnCmdLine()).inheritIO().start();
-    }
-
-    public static String[] getMyOwnCmdLine() throws IOException {
-        return readFirstLine("/proc/self/cmdline").split("\u0000");
-    }
-
-    public static String readFirstLine(final String filename) throws IOException {
-        try (final BufferedReader in = new BufferedReader(new FileReader(filename))) {
-            return in.readLine();
-        }
-    }
-
-    public void play(final String uri) {
+    public void play() {
         try {
             tryKeepPlaying(uri);
         } catch (final IOException e) {
             e.printStackTrace();
         }
+        thread = null;
     }
 
     public void tryKeepPlaying(final String uri) throws IOException {
         final ProcessBuilder processBuilder = new ProcessBuilder("mplayer", "--quiet", uri);
-        while (!mainThread.isInterrupted())
+        while (!thread.isInterrupted())
             runMplayer(processBuilder);
     }
 
@@ -129,4 +129,5 @@ public class JPlayer {
         if (m.find()) return m.group(1);
         return null;
     }
+
 }
