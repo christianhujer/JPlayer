@@ -2,7 +2,10 @@ import java.awt.AWTException;
 import java.awt.MenuItem;
 import java.awt.PopupMenu;
 import java.awt.TrayIcon;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
@@ -37,16 +40,49 @@ public class JPlayer {
 
     private PopupMenu createPopupMenu() {
         final PopupMenu popupMenu = new PopupMenu("JPlayer");
-        final MenuItem quit = new MenuItem("Quit");
-        popupMenu.add(quit);
-        quit.addActionListener(e -> stop());
+        //popupMenu.add(createMenuItem("pause", this::pause));
+	popupMenu.add(createMenuItem("restart", this::restart));
+        popupMenu.add(createMenuItem("quit", this::stop));
         return popupMenu;
     }
 
-    public void stop() {
+    private MenuItem createMenuItem(final String title, final ActionListener al) {
+        final MenuItem menuItem = new MenuItem(title);
+        menuItem.addActionListener(al);
+        return menuItem;
+    }
+
+    public void pause(final ActionEvent e) {
         mplayer.destroy();
         mainThread.interrupt();
+    }
+
+    public void stop(final ActionEvent e) {
+        pause(e);
         getSystemTray().remove(trayIcon);
+    }
+
+    public void restart(final ActionEvent e) {
+        stop(e);
+        try {
+            restart();
+        } catch (final IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    public static void restart() throws IOException {
+        new ProcessBuilder(getMyOwnCmdLine()).inheritIO().start();
+    }
+
+    public static String[] getMyOwnCmdLine() throws IOException {
+        return readFirstLine("/proc/self/cmdline").split("\u0000");
+    }
+
+    public static String readFirstLine(final String filename) throws IOException {
+        try (final BufferedReader in = new BufferedReader(new FileReader(filename))) {
+            return in.readLine();
+        }
     }
 
     public void play(final String uri) {
