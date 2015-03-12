@@ -62,8 +62,8 @@ public class JPlayer {
     }
 
     public void pause(final ActionEvent e) {
-        thread.interrupt();
-        mplayer.destroy();
+        if (thread != null) thread.interrupt();
+        if (mplayer != null) mplayer.destroy();
     }
 
     public void cont(final ActionEvent e) {
